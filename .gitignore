@@ -1,0 +1,35 @@
+# === 机密信息：绝不提交 ===
+config.json
+*.key
+.env
+.env.*
+
+# === 运行产物 ===
+audio.wav
+transcript.srt
+transcript.json
+transcript_clean.srt
+usage.json
+models/
+
+# === 大体积二进制（用 get_models.bat 下载，不进仓库） ===
+1.exe
+2.exe
+m_fast.bin
+m_mid.bin
+m_large.bin
+*.bin
+*.zip
+
+# === Python ===
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec.bak
+
+# === 编辑器 / 系统 ===
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

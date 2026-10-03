@@ -1,0 +1,28 @@
+name: sanitize-check
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 密钥残留与功能自检
+        run: python tests/test_sanitize.py
+
+      - name: 阻断意外提交的 config.json
+        shell: pwsh
+        run: |
+          $bad = Get-ChildItem -Recurse -Force -Filter config.json -ErrorAction SilentlyContinue
+          if ($bad) {
+            Write-Error "发现 config.json，可能包含明文密钥：$($bad.FullName -join ', ')"
+            exit 1
+          }
+          Write-Host "未发现 config.json"

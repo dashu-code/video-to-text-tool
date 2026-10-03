@@ -1,0 +1,10 @@
+config.json
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec.bak
+audio.wav
+transcript.srt
+transcript.json
+transcript_clean.srt
