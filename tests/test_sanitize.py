@@ -4,7 +4,8 @@
 作用：
 1) 校验 app.py 的 SRT 解析与回写往返一致（防止改动引入回归）；
 2) 校验 load_config 的密钥优先级：环境变量 > config.json，且默认值为空；
-3) 扫描本仓库所有文本文件，确认没有 `sk-` 形式的密钥或已填写的 api_key 残留。
+3) 扫描本仓库所有文本文件，确认没有 `sk-` 形式的密钥或已填写的 api_key 残留；
+4) 校验 .bat 换行符为 CRLF（LF 会让 cmd.exe 解析批处理出错）。
 
 用法（在仓库根目录或任意位置均可）：
     python tests/test_sanitize.py
@@ -15,6 +16,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 
@@ -160,9 +162,42 @@ def test_no_secrets_on_disk():
     check("config.json" in gi, ".gitignore 忽略 config.json")
 
 
+def test_bat_crlf():
+    """Windows 批处理必须 CRLF。校验工作区与 git 对象里的内容都是 CRLF。
+
+    回归背景：LF 换行的 .bat 会让 cmd.exe 解析错乱——4.bat 选 1（tiny）
+    却报 'm_mid.bin not found'，新用户会以为工具坏了。
+    """
+    print("\n[4] 批处理换行符（必须 CRLF）")
+    bats = sorted(f for f in os.listdir(REPO) if f.lower().endswith((".bat", ".cmd")))
+    if not bats:
+        check(False, "仓库根目录找不到 .bat 文件")
+        return
+    for name in bats:
+        data = open(os.path.join(REPO, name), "rb").read()
+        crlf = data.count(b"\r\n")
+        lf_only = data.count(b"\n") - crlf
+        check(crlf > 0 and lf_only == 0,
+              "%s 工作区为 CRLF（CRLF=%d, LF-only=%d）" % (name, crlf, lf_only))
+
+    # git 对象里的版本决定 clone / Download ZIP 拿到什么，必须也是 CRLF
+    if os.path.isdir(os.path.join(REPO, ".git")):
+        for name in bats:
+            r = subprocess.run(["git", "show", ":" + name], cwd=REPO,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if r.returncode != 0:
+                print("  [SKIP] %s 尚未纳入 git 索引" % name)
+                continue
+            data = r.stdout
+            crlf = data.count(b"\r\n")
+            lf_only = data.count(b"\n") - crlf
+            check(crlf > 0 and lf_only == 0,
+                  "git 对象里 %s 也是 CRLF（CRLF=%d, LF-only=%d）" % (name, crlf, lf_only))
+
+
 def test_gui_smoke(mod):
     """真正把窗口建起来再关掉，确认改动没破坏 GUI 初始化。无图形环境时跳过。"""
-    print("\n[4] GUI 冒烟测试")
+    print("\n[5] GUI 冒烟测试")
     try:
         import tkinter as tk
     except ImportError:
@@ -194,6 +229,7 @@ def main():
     test_srt_roundtrip(mod)
     test_key_priority(mod)
     test_no_secrets_on_disk()
+    test_bat_crlf()
     test_gui_smoke(mod)
 
     print("\n" + "=" * 46)

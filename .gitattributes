@@ -1,0 +1,18 @@
+# Windows 批处理必须是 CRLF：cmd.exe 解析批处理用 LF 换行会错乱。
+# 这里声明为 binary，禁止 git 做任何换行转换，从而让 CRLF 原样存进仓库对象，
+# 这样 git clone、GitHub "Download ZIP"、CI checkout 拿到的都是 CRLF。
+*.bat binary
+*.cmd binary
+
+# 其余文本统一 LF，避免整仓库换行噪声
+*.py   text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# 二进制
+*.exe binary
+*.dll binary
+*.bin binary
+*.zip binary
